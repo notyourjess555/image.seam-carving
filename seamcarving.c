@@ -2,77 +2,58 @@
 #include <stdio.h>
 #include <math.h>
 
-void calc_energy(struct rgb_img *im, struct rgb_img **grad){
-    //create img
-    create_img(grad, im->height, im->width);
+//new double array version, replace using greyscale, to keep image quality
+void calc_energy(struct rgb_img *im, double **energy){
 
-    //use for loop to brighten or darkern the image
-    for(int i =0; i < im->height; i++){
+    int height = im->height;
+    int width = im->width;
 
-        for(int j =0; j < im->width; j++){
+    *energy = malloc(height * width * sizeof(double));
 
-            //get pixel for each
-            int x_right = (j+1) % im->width;
-            int x_left = (j-1 + im->width) % im->width;
-            int y_down = (i+1) % im->height;
-            int y_up = (i-1 + im->height) % im->height;
-            
-            //for x
+    for(int i = 0; i < height; i++){
+        for(int j = 0; j < width; j++){
+
+            int x_right = (j+1) % width;
+            int x_left = (j-1+width) % width;
+            int y_down = (i+1) % height;
+            int y_up = (i-1+height) % height;
+
             int Rx = get_pixel(im, i, x_right, 0) - get_pixel(im, i, x_left, 0);
-            //R(y, x+1) - R(y, x-1);
             int Gx = get_pixel(im, i, x_right, 1) - get_pixel(im, i, x_left, 1);
-            //G(y, x+1) - G(y, x-1);
             int Bx = get_pixel(im, i, x_right, 2) - get_pixel(im, i, x_left, 2);
-            //B(y, x+1) - B(y, x-1);
 
-            //for y
             int Ry = get_pixel(im, y_down, j, 0) - get_pixel(im, y_up, j, 0);
-            //R(y, x+1) - R(y, x-1);
             int Gy = get_pixel(im, y_down, j, 1) - get_pixel(im, y_up, j, 1);
-            //G(y, x+1) - G(y, x-1);
             int By = get_pixel(im, y_down, j, 2) - get_pixel(im, y_up, j, 2);
-            
-            //the delta
-            int delta_x_sqr = Rx * Rx + Gx * Gx + Bx * Bx;
-            int delta_y_sqr = Ry * Ry + Gy * Gy + By * By;
 
-            //energy
-            int energy = sqrt(delta_x_sqr + delta_y_sqr);
+            int delta_x_sqr = Rx*Rx + Gx*Gx + Bx*Bx;
+            int delta_y_sqr = Ry*Ry + Gy*Gy + By*By;
 
-            //uint8_t and divid 10
-            uint8_t energy_value = (uint8_t) (energy/10.0);
+            double pixel_energy = sqrt(delta_x_sqr + delta_y_sqr);
 
-            //set pixel to grad 
-            //for each pixel, set the r, g, and b channels to the same value
-
-            set_pixel(*grad, i,j, energy_value, energy_value, energy_value);
-
-
+            (*energy)[i * width + j] = pixel_energy;
         }
     }
-    
 }
 
-void dynamic_seam(struct rgb_img *grad, double **best_arr){
-
-    int height = grad->height;
-    int width = grad->width;
+//changed for double energy arry instead of greyscale
+void dynamic_seam(double *energy, int height, int width, double **best_arr){
 
     *best_arr = (double *)malloc(width * height * sizeof(double));
 
     //fill the rest
-    for(int i =0; i < grad->height; i++){ //row
+    for(int i =0; i < height; i++){ //row
 
-        for(int j =0; j < grad->width; j++){ //col
+        for(int j =0; j < width; j++){ //col
 
             //get the energy
-            double energy = get_pixel(grad, i, j, 0);
+            double pixel_energy = energy[i * width + j];
 
 
             //if it is the first row
             if(i == 0){
 
-                (*best_arr)[i * width + j] = energy; //same value
+                (*best_arr)[i * width + j] = pixel_energy; //same value
             }
             else{
 
@@ -99,7 +80,7 @@ void dynamic_seam(struct rgb_img *grad, double **best_arr){
                 }
                 
                 //store
-                (*best_arr)[i * width + j] = energy +  min;
+                (*best_arr)[i * width + j] = pixel_energy +  min;
 
 
             }     
@@ -110,7 +91,10 @@ void dynamic_seam(struct rgb_img *grad, double **best_arr){
 void recover_path(double *best, int height, int width, int **path){
 
     *path = (int*)malloc(sizeof(int) * height);
-    int min_col;
+
+    int min_col=0; //bug fixed Nov 1st 2026
+    //search < min is never true, meaning min_col never gets assigned.
+
     double min = best[(height-1) * width]; //start with first col
 
     //find the min in the last row 
@@ -146,22 +130,26 @@ void recover_path(double *best, int height, int width, int **path){
         min = top;
 
         //check top left, if at col 0, no left, no need to check
-        double top_left =  best[(i-1) * width + (current_col-1)];
-        if(top_left < min && current_col > 0){
+        if(current_col > 0){
+            double top_left = best[(i-1) * width + (current_col-1)];
+        
+            if(top_left < min){
+                min_col = current_col - 1;
+                min = top_left;
+            }
+        }//bug fixed: Nov 1st 2026
+        //for C evaluates the array access before checking the if condition. 
+        //when current_col == 0, you're trying to access column -1.
 
-            min_col = current_col -1;
-            min = top_left;
-
-        }
-
-        //check top left, if at col width-1, not right, no need to check
-        double top_right= best[(i-1) * width + (current_col+1)];
-        if(top_right < min && current_col < width-1){
-
-            min_col = current_col+1;
-            min = top_right;
-
-        }
+        //check top right
+        if(current_col < width-1){
+            double top_right = best[(i-1) * width + (current_col+1)];
+        
+            if(top_right < min){
+                min_col = current_col + 1;
+                min = top_right;
+            }
+        }//bug fixed: Nov 1st 2026 same reason for top left
 
         (*path)[i-1] = min_col;
        
