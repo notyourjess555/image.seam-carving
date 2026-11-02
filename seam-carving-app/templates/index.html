@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#251810" />
+    <meta name="description" content="Resize an image by removing low-detail vertical seams." />
+    <title>Image Resizing for PNG &amp; JPG</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css', v='3') }}" />
+    <script src="{{ url_for('static', filename='app.js', v='3') }}" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="title-block">
+          <h1 class="wordmark" id="page-title">Image Resizing for PNG &amp; JPG</h1>
+          <p class="intro__copy">Remove low-detail seams to make an image narrower without stretching it.</p>
+        </div>
+      </header>
+
+      <main>
+        <section class="workbench" aria-label="Image resizing tool">
+          <form class="controls" id="carveForm">
+            <div class="section-label"><span>Image</span></div>
+
+            <label class="drop-zone" id="dropZone" for="imageInput" tabindex="0">
+              <input class="visually-hidden" id="imageInput" name="image" type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" />
+              <span class="drop-zone__title">Choose an image</span>
+              <span class="drop-zone__hint">or drop it here</span>
+              <span class="drop-zone__types">JPG or PNG <i>·</i> up to 12 MB</span>
+            </label>
+
+            <div class="input-group">
+              <div class="field-heading">
+                <label for="targetWidth">Target width</label>
+                <span>pixels</span>
+              </div>
+              <div class="number-input">
+                <input id="targetWidth" name="target_width" type="number" min="1" step="1" inputmode="numeric" placeholder="—" disabled />
+                <span>px</span>
+              </div>
+              <p class="field-note" id="widthNote">Choose an image to set its width.</p>
+            </div>
+
+            <button class="run-button" id="runButton" type="submit" disabled>
+              <span>Run seam carving</span>
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11m-4-4 4 4-4 4" /></svg>
+            </button>
+
+            <p class="status-message" id="statusMessage" role="status" aria-live="polite">Choose an image to begin.</p>
+          </form>
+
+          <section class="preview" aria-labelledby="preview-title">
+            <div class="preview__heading">
+              <h2 id="preview-title">Visualize the Results</h2>
+            </div>
+
+            <div class="comparison">
+              <article class="preview-panel">
+                <header class="preview-panel__top">
+                  <span>Original</span>
+                  <span class="dimensions" id="originalDimensions"></span>
+                </header>
+                <div class="preview-frame" id="originalFrame">
+                  <div class="empty-state" id="originalEmpty">
+                    <span>Your image will appear here</span>
+                  </div>
+                  <img id="originalPreview" alt="Original image preview" hidden />
+                </div>
+              </article>
+
+              <article class="preview-panel preview-panel--result">
+                <header class="preview-panel__top">
+                  <span>Carved</span>
+                  <span class="dimensions" id="resultDimensions"></span>
+                </header>
+                <div class="preview-frame" id="resultFrame">
+                  <div class="empty-state" id="resultEmpty">
+                    <span>Result will appear here</span>
+                  </div>
+                  <img id="resultPreview" alt="Seam-carved result preview" hidden />
+                </div>
+              </article>
+            </div>
+
+            <div class="preview__bottom">
+              <a class="download-button" id="downloadButton" aria-disabled="true" tabindex="-1">
+                Download PNG <span aria-hidden="true">↓</span>
+              </a>
+            </div>
+          </section>
+        </section>
+      </main>
+
+      <footer class="footer"><span>© Jess Chan 2026</span></footer>
+    </div>
+  </body>
+</html>
