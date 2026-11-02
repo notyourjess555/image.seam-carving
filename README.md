@@ -1,6 +1,7 @@
 # Seam Carving for Content-Aware Image Resizing 
 
 A resizing application website that reduces image width while attempting to preserve visually important details.
+on https://imageseamcrave.onrender.com
 
 ## What is Seam Craving?
 Seam carving is a content-aware image resizing algorithm first published by Avidan & Shamir in 2007, now used in Adobe Photoshop. Unlike cropping (which cuts out content) or scaling (which distorts everything), seam carving removes vertical or horizontal "seams" — connected paths of pixels from top to bottom (or left to right) — where each seam is chosen to minimize the loss of noticeable image content.
